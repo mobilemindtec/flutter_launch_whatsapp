@@ -1,46 +1,65 @@
 package flutterlaunch.thyagoluciano.com.flutter_launch
 
-import android.content.Context
+import android.app.Activity
+import android.app.Application
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.net.Uri
+import io.flutter.embedding.engine.plugins.FlutterPlugin
+import io.flutter.embedding.engine.plugins.activity.ActivityAware
+import io.flutter.embedding.engine.plugins.activity.ActivityPluginBinding
 import io.flutter.plugin.common.MethodCall
 import io.flutter.plugin.common.MethodChannel
 import io.flutter.plugin.common.MethodChannel.MethodCallHandler
 import io.flutter.plugin.common.MethodChannel.Result
+import io.flutter.plugin.common.PluginRegistry
 import io.flutter.plugin.common.PluginRegistry.Registrar
 import java.net.URLEncoder
 
-class FlutterLaunchPlugin(val mRegistrar: Registrar): MethodCallHandler {
+class FlutterLaunchPlugin: MethodCallHandler, FlutterPlugin, ActivityAware {
 
   companion object {
+
+    val CHANNEL_NAME = "flutter_launch";
+
     @JvmStatic
     fun registerWith(registrar: Registrar) {
-      val channel = MethodChannel(registrar.messenger(), "flutter_launch")
-      channel.setMethodCallHandler(FlutterLaunchPlugin(registrar))
+      val channel = MethodChannel(registrar.messenger(), CHANNEL_NAME)
+      channel.setMethodCallHandler(FlutterLaunchPlugin(registrar, channel))
     }
+  }
+
+  private var channel: MethodChannel? = null
+  private var application: Application? = null
+  private var activity: Activity? = null
+
+  private constructor(registrar: PluginRegistry.Registrar, channel: MethodChannel) {
+    this.channel = channel
+    this.application = registrar.context() as Application
+    this.activity = registrar.activity()
+  }
+
+  constructor() {
   }
 
   override fun onMethodCall(call: MethodCall, result: Result): Unit {
     try {
-      val context: Context = mRegistrar.context()
-      val pm: PackageManager = context.packageManager
-
+      val pm: PackageManager = this.activity!!.packageManager
       if (call.method.equals("launchWathsApp")) {
 
         val phone: String? = call.argument("phone")
         val message: String? = call.argument("message")
 
-        val url: String = "https://api.whatsapp.com/send?phone=$phone&text=${URLEncoder.encode(message, "UTF-8")}"
+        val url = "https://api.whatsapp.com/send?phone=$phone&text=${URLEncoder.encode(message, "UTF-8")}"
 
         if (appInstalledOrNot("com.whatsapp")) {
-          val intent: Intent = Intent(Intent.ACTION_VIEW)
-          intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+          val intent = Intent(Intent.ACTION_VIEW)
+          intent.flags = Intent.FLAG_ACTIVITY_NEW_TASK
           intent.setPackage("com.whatsapp")
-          intent.setData(Uri.parse(url))
+          intent.data = Uri.parse(url)
 
           if (intent.resolveActivity(pm) != null) {
-            context.startActivity(intent)
+            this.activity!!.startActivity(intent)
           }
         }
       }
@@ -62,8 +81,7 @@ class FlutterLaunchPlugin(val mRegistrar: Registrar): MethodCallHandler {
   }
 
   private fun appInstalledOrNot(uri: String) : Boolean {
-    val context: Context = mRegistrar.context();
-    val pm: PackageManager = context.packageManager
+    val pm: PackageManager = this.activity!!.packageManager
     var appInstalled: Boolean
 
     try {
@@ -75,4 +93,33 @@ class FlutterLaunchPlugin(val mRegistrar: Registrar): MethodCallHandler {
 
     return appInstalled
   }
+
+  override fun onAttachedToEngine(flutterPluginBinding: FlutterPlugin.FlutterPluginBinding) {
+    channel = MethodChannel(flutterPluginBinding.binaryMessenger, CHANNEL_NAME)
+    channel!!.setMethodCallHandler(this)
+  }
+
+  override fun onDetachedFromEngine(p0: FlutterPlugin.FlutterPluginBinding) {
+    if(channel != null)
+      channel!!.setMethodCallHandler(null)
+  }
+
+  override fun onAttachedToActivity(activityPluginBinding: ActivityPluginBinding) {
+    this.activity = activityPluginBinding.activity;
+    this.application = activityPluginBinding.activity.application;
+  }
+
+  override fun onDetachedFromActivityForConfigChanges() {
+    TODO("Not yet implemented")
+  }
+
+  override fun onReattachedToActivityForConfigChanges(p0: ActivityPluginBinding) {
+    TODO("Not yet implemented")
+  }
+
+  override fun onDetachedFromActivity() {
+    this.activity = null;
+    this.application = null;
+  }
+
 }
