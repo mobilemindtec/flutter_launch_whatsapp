@@ -44,6 +44,13 @@ class FlutterLaunchPlugin: MethodCallHandler, FlutterPlugin, ActivityAware {
 
   override fun onMethodCall(call: MethodCall, result: Result): Unit {
     try {
+
+      val whatsappPackages = listOf(
+        "com.whatsapp.w4b",
+        "com.whatsapp.wb4",
+        "com.whatsapp"
+      )
+
       val pm: PackageManager = this.activity!!.packageManager
       if (call.method.equals("launchWathsApp")) {
 
@@ -52,10 +59,12 @@ class FlutterLaunchPlugin: MethodCallHandler, FlutterPlugin, ActivityAware {
 
         val url = "https://api.whatsapp.com/send?phone=$phone&text=${URLEncoder.encode(message, "UTF-8")}"
 
-        if (appInstalledOrNot("com.whatsapp")) {
+        var wappPack = whatsappPackages.firstOrNull({ pack: String -> appInstalledOrNot(pack) })
+
+        if (wappPack != null) {
           val intent = Intent(Intent.ACTION_VIEW)
           intent.flags = Intent.FLAG_ACTIVITY_NEW_TASK
-          intent.setPackage("com.whatsapp")
+          intent.setPackage(wappPack)
           intent.data = Uri.parse(url)
 
           if (intent.resolveActivity(pm) != null) {
@@ -69,7 +78,7 @@ class FlutterLaunchPlugin: MethodCallHandler, FlutterPlugin, ActivityAware {
 
         when(app) {
           "facebook" -> result.success(appInstalledOrNot("com.facebook.katana"))
-          "whatsapp" -> result.success(appInstalledOrNot("com.whatsapp"))
+          "whatsapp" -> result.success(whatsappPackages.any({ pack: String -> appInstalledOrNot(pack) }))
           else -> {
             result.error("App not found", "", null)
           }
