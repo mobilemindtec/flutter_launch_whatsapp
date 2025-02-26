@@ -10,10 +10,8 @@ import io.flutter.embedding.engine.plugins.activity.ActivityAware
 import io.flutter.embedding.engine.plugins.activity.ActivityPluginBinding
 import io.flutter.plugin.common.MethodCall
 import io.flutter.plugin.common.MethodChannel
-import io.flutter.plugin.common.MethodChannel.MethodCallHandler
 import io.flutter.plugin.common.MethodChannel.Result
-import io.flutter.plugin.common.PluginRegistry
-import io.flutter.plugin.common.PluginRegistry.Registrar
+import io.flutter.plugin.common.MethodChannel.MethodCallHandler
 import java.net.URLEncoder
 
 class FlutterLaunchPlugin: MethodCallHandler, FlutterPlugin, ActivityAware {
@@ -22,17 +20,14 @@ class FlutterLaunchPlugin: MethodCallHandler, FlutterPlugin, ActivityAware {
 
     val CHANNEL_NAME = "flutter_launch";
 
-    @JvmStatic
-    fun registerWith(registrar: Registrar) {
-      val channel = MethodChannel(registrar.messenger(), CHANNEL_NAME)
-      channel.setMethodCallHandler(FlutterLaunchPlugin(registrar, channel))
-    }
   }
 
   private var channel: MethodChannel? = null
   private var application: Application? = null
   private var activity: Activity? = null
 
+
+  /*
   private constructor(registrar: PluginRegistry.Registrar, channel: MethodChannel) {
     this.channel = channel
     this.application = registrar.context() as Application
@@ -40,7 +35,7 @@ class FlutterLaunchPlugin: MethodCallHandler, FlutterPlugin, ActivityAware {
   }
 
   constructor() {
-  }
+  }*/
 
   override fun onMethodCall(call: MethodCall, result: Result): Unit {
     try {
